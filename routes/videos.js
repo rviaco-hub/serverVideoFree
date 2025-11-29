@@ -2,8 +2,8 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 const videosController = require('../controllers/videosController');
-
 
 // multer storage configuration
 const storage = multer.diskStorage({
@@ -30,5 +30,34 @@ router.post('/', upload.single('file'), videosController.create);
 router.put('/:id', upload.single('file'), videosController.update);
 router.delete('/:id', videosController.remove);
 
+// 🚀 STREAM REAL
+router.get('/file/:id', async (req, res) => {
+    try {
+        const video = await videosController.findById(req.params.id);
+
+        if (!video || !video.filename) {
+            return res.status(404).send('Video not found');
+        }
+
+        const filePath = path.join(__dirname, '..', 'uploads', video.filename);
+
+        // verificar que existe
+        if (!fs.existsSync(filePath)) {
+            return res.status(404).send('Physical file not found');
+        }
+
+        res.writeHead(200, {
+            "Content-Type": "video/mp4",
+        });
+
+        fs.createReadStream(filePath).pipe(res);
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server error');
+    }
+});
+
 
 module.exports = router;
+
