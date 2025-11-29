@@ -36,6 +36,7 @@ exports.streamFile = async (req, res) => {
     const stat = await fs.stat(filePath);
     const fileSize = stat.size;
     const range = req.headers.range;
+    const contentType = video.mimetype && video.mimetype.startsWith('video') ? video.mimetype : 'video/mp4';
 
 
     if (range) {
@@ -48,14 +49,14 @@ exports.streamFile = async (req, res) => {
             'Content-Range': `bytes ${start}-${end}/${fileSize}`,
             'Accept-Ranges': 'bytes',
             'Content-Length': chunkSize,
-            'Content-Type': video.mimetype || 'video/mp4',
+            'Content-Type': contentType,
         };
         res.writeHead(206, head);
         file.pipe(res);
     } else {
         const head = {
             'Content-Length': fileSize,
-            'Content-Type': video.mimetype || 'video/mp4',
+            'Content-Type': contentType,
         };
         res.writeHead(200, head);
         fs.createReadStream(filePath).pipe(res);
